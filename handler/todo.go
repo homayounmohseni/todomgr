@@ -36,6 +36,17 @@ func parseID(c *gin.Context) (int64, bool) {
 	return id, true
 }
 
+// Create creates a new todo.
+//
+// @Summary Create todo
+// @Tags todos
+// @Accept json
+// @Produce json
+// @Param todo body model.CreateTodoInput true "Todo to create"
+// @Success 201 {object} model.Todo
+// @Failure 400 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /todos [post]
 func (h *TodoHandler) Create(c *gin.Context) {
 	var in model.CreateTodoInput
 	if err := c.ShouldBindJSON(&in); err != nil {
@@ -50,6 +61,14 @@ func (h *TodoHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, t)
 }
 
+// List returns all todos.
+//
+// @Summary List todos
+// @Tags todos
+// @Produce json
+// @Success 200 {array} model.Todo
+// @Failure 500 {object} model.ErrorResponse
+// @Router /todos [get]
 func (h *TodoHandler) List(c *gin.Context) {
 	todos, err := h.Store.List(c.Request.Context())
 	if err != nil {
@@ -62,6 +81,17 @@ func (h *TodoHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, todos)
 }
 
+// Get returns a single todo by ID.
+//
+// @Summary Get todo
+// @Tags todos
+// @Produce json
+// @Param id path int true "Todo ID"
+// @Success 200 {object} model.Todo
+// @Failure 400 {object} model.ErrorResponse
+// @Failure 404 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /todos/{id} [get]
 func (h *TodoHandler) Get(c *gin.Context) {
 	id, ok := parseID(c)
 	if !ok {
@@ -79,6 +109,19 @@ func (h *TodoHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
+// Update replaces a todo's title and done flag.
+//
+// @Summary Update todo
+// @Tags todos
+// @Accept json
+// @Produce json
+// @Param id path int true "Todo ID"
+// @Param todo body model.UpdateTodoInput true "Updated fields"
+// @Success 200 {object} model.Todo
+// @Failure 400 {object} model.ErrorResponse
+// @Failure 404 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /todos/{id} [put]
 func (h *TodoHandler) Update(c *gin.Context) {
 	id, ok := parseID(c)
 	if !ok {
@@ -101,6 +144,17 @@ func (h *TodoHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
+// Delete removes a todo by ID.
+//
+// @Summary Delete todo
+// @Tags todos
+// @Produce json
+// @Param id path int true "Todo ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} model.ErrorResponse
+// @Failure 404 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /todos/{id} [delete]
 func (h *TodoHandler) Delete(c *gin.Context) {
 	id, ok := parseID(c)
 	if !ok {

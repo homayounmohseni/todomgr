@@ -1,0 +1,209 @@
+basePath: /
+definitions:
+  model.CreateTodoInput:
+    properties:
+      title:
+        example: Buy milk
+        maxLength: 500
+        minLength: 1
+        type: string
+    required:
+    - title
+    type: object
+  model.ErrorResponse:
+    properties:
+      error:
+        example: not found
+        type: string
+    type: object
+  model.Todo:
+    properties:
+      created_at:
+        type: string
+      done:
+        example: false
+        type: boolean
+      id:
+        example: 1
+        type: integer
+      title:
+        example: Buy milk
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.UpdateTodoInput:
+    properties:
+      done:
+        example: true
+        type: boolean
+      title:
+        example: Buy milk
+        maxLength: 500
+        minLength: 1
+        type: string
+    required:
+    - title
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Simple todo CRUD API.
+  title: Todo Manager API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - ops
+  /todos:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Todo'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: List todos
+      tags:
+      - todos
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Todo to create
+        in: body
+        name: todo
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateTodoInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Todo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Create todo
+      tags:
+      - todos
+  /todos/{id}:
+    delete:
+      parameters:
+      - description: Todo ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Delete todo
+      tags:
+      - todos
+    get:
+      parameters:
+      - description: Todo ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Todo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Get todo
+      tags:
+      - todos
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Todo ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated fields
+        in: body
+        name: todo
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateTodoInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Todo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Update todo
+      tags:
+      - todos
+swagger: "2.0"
