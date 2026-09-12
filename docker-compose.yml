@@ -1,4 +1,15 @@
 services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://todo:todo@db:5432/todo?sslmode=disable
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
   db:
     image: postgres:16
     environment:
@@ -9,6 +20,12 @@ services:
       - "5432:5432"
     volumes:
       - todo-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todo -d todo"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    restart: unless-stopped
 
 volumes:
   todo-data:
