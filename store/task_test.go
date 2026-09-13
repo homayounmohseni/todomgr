@@ -17,17 +17,17 @@ func TestPostgresListSuccess(t *testing.T) {
 	}
 	defer mock.Close()
 	now := time.Now()
-	mock.ExpectQuery("SELECT id, title").WillReturnRows(
-		pgxmock.NewRows([]string{"id", "title", "done", "created_at", "updated_at"}).
-			AddRow(int64(1), "a", false, now, now).
-			AddRow(int64(2), "b", true, now, now),
+	mock.ExpectQuery("SELECT id, title").WithArgs(20, 0).WillReturnRows(
+		pgxmock.NewRows([]string{"id", "title", "status", "assignee", "created_at", "updated_at"}).
+			AddRow(int64(1), "a", false, "", now, now).
+			AddRow(int64(2), "b", true, "", now, now),
 	)
 	s := NewPostgresStore(mock)
-	tasks, err := s.List(context.Background())
+	tasks, err := s.List(context.Background(), ListFilter{Limit: 20})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tasks) != 2 || tasks[0].Title != "a" || !tasks[1].Done {
+	if len(tasks) != 2 || tasks[0].Title != "a" || !tasks[1].Status {
 		t.Fatalf("unexpected tasks: %+v", tasks)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -38,9 +38,9 @@ func TestPostgresListSuccess(t *testing.T) {
 func TestPostgresListQueryError(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectQuery("SELECT id, title").WillReturnError(errors.New("boom"))
+	mock.ExpectQuery("SELECT id, title").WithArgs(20, 0).WillReturnError(errors.New("boom"))
 	s := NewPostgresStore(mock)
-	if _, err := s.List(context.Background()); err == nil {
+	if _, err := s.List(context.Background(), ListFilter{Limit: 20}); err == nil {
 		t.Fatal("want error")
 	}
 }
@@ -49,12 +49,12 @@ func TestPostgresListScanError(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
 	now := time.Now()
-	mock.ExpectQuery("SELECT id, title").WillReturnRows(
-		pgxmock.NewRows([]string{"id", "title", "done", "created_at", "updated_at"}).
-			AddRow("not-an-int", "a", false, now, now),
+	mock.ExpectQuery("SELECT id, title").WithArgs(20, 0).WillReturnRows(
+		pgxmock.NewRows([]string{"id", "title", "status", "assignee", "created_at", "updated_at"}).
+			AddRow("not-an-int", "a", false, "", now, now),
 	)
 	s := NewPostgresStore(mock)
-	if _, err := s.List(context.Background()); err == nil {
+	if _, err := s.List(context.Background(), ListFilter{Limit: 20}); err == nil {
 		t.Fatal("want scan error")
 	}
 }
@@ -64,8 +64,8 @@ func TestPostgresGetSuccess(t *testing.T) {
 	defer mock.Close()
 	now := time.Now()
 	mock.ExpectQuery("SELECT id, title").WithArgs(int64(1)).WillReturnRows(
-		pgxmock.NewRows([]string{"id", "title", "done", "created_at", "updated_at"}).
-			AddRow(int64(1), "a", false, now, now),
+		pgxmock.NewRows([]string{"id", "title", "status", "assignee", "created_at", "updated_at"}).
+			AddRow(int64(1), "a", false, "", now, now),
 	)
 	s := NewPostgresStore(mock)
 	got, err := s.Get(context.Background(), 1)
@@ -99,12 +99,12 @@ func TestPostgresCreateSuccess(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
 	now := time.Now()
-	mock.ExpectQuery("INSERT INTO tasks").WithArgs("buy milk").WillReturnRows(
-		pgxmock.NewRows([]string{"id", "title", "done", "created_at", "updated_at"}).
-			AddRow(int64(1), "buy milk", false, now, now),
+	mock.ExpectQuery("INSERT INTO tasks").WithArgs("buy milk", "").WillReturnRows(
+		pgxmock.NewRows([]string{"id", "title", "status", "assignee", "created_at", "updated_at"}).
+			AddRow(int64(1), "buy milk", false, "", now, now),
 	)
 	s := NewPostgresStore(mock)
-	got, err := s.Create(context.Background(), "buy milk")
+	got, err := s.Create(context.Background(), "buy milk", "")
 	if err != nil || got.ID != 1 {
 		t.Fatalf("got %+v err %v", got, err)
 	}
@@ -113,9 +113,9 @@ func TestPostgresCreateSuccess(t *testing.T) {
 func TestPostgresCreateError(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectQuery("INSERT INTO tasks").WithArgs("x").WillReturnError(errors.New("boom"))
+	mock.ExpectQuery("INSERT INTO tasks").WithArgs("x", "").WillReturnError(errors.New("boom"))
 	s := NewPostgresStore(mock)
-	if _, err := s.Create(context.Background(), "x"); err == nil {
+	if _, err := s.Create(context.Background(), "x", ""); err == nil {
 		t.Fatal("want error")
 	}
 }
@@ -124,13 +124,13 @@ func TestPostgresUpdateSuccess(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
 	now := time.Now()
-	mock.ExpectQuery("UPDATE tasks").WithArgs(int64(1), "y", true).WillReturnRows(
-		pgxmock.NewRows([]string{"id", "title", "done", "created_at", "updated_at"}).
-			AddRow(int64(1), "y", true, now, now),
+	mock.ExpectQuery("UPDATE tasks").WithArgs(int64(1), "y", true, "").WillReturnRows(
+		pgxmock.NewRows([]string{"id", "title", "status", "assignee", "created_at", "updated_at"}).
+			AddRow(int64(1), "y", true, "", now, now),
 	)
 	s := NewPostgresStore(mock)
-	got, err := s.Update(context.Background(), 1, "y", true)
-	if err != nil || !got.Done || got.Title != "y" {
+	got, err := s.Update(context.Background(), 1, "y", true, "")
+	if err != nil || !got.Status || got.Title != "y" {
 		t.Fatalf("got %+v err %v", got, err)
 	}
 }
@@ -138,9 +138,9 @@ func TestPostgresUpdateSuccess(t *testing.T) {
 func TestPostgresUpdateNotFound(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectQuery("UPDATE tasks").WithArgs(int64(999), "y", true).WillReturnError(pgx.ErrNoRows)
+	mock.ExpectQuery("UPDATE tasks").WithArgs(int64(999), "y", true, "").WillReturnError(pgx.ErrNoRows)
 	s := NewPostgresStore(mock)
-	if _, err := s.Update(context.Background(), 999, "y", true); !errors.Is(err, ErrNotFound) {
+	if _, err := s.Update(context.Background(), 999, "y", true, ""); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("want ErrNotFound, got %v", err)
 	}
 }
@@ -148,9 +148,9 @@ func TestPostgresUpdateNotFound(t *testing.T) {
 func TestPostgresUpdateError(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectQuery("UPDATE tasks").WithArgs(int64(1), "y", true).WillReturnError(errors.New("boom"))
+	mock.ExpectQuery("UPDATE tasks").WithArgs(int64(1), "y", true, "").WillReturnError(errors.New("boom"))
 	s := NewPostgresStore(mock)
-	if _, err := s.Update(context.Background(), 1, "y", true); err == nil {
+	if _, err := s.Update(context.Background(), 1, "y", true, ""); err == nil {
 		t.Fatal("want error")
 	}
 }
@@ -184,5 +184,29 @@ func TestPostgresDeleteError(t *testing.T) {
 	s := NewPostgresStore(mock)
 	if err := s.Delete(context.Background(), 1); err == nil {
 		t.Fatal("want error")
+	}
+}
+
+func TestPostgresListWithFilters(t *testing.T) {
+	mock, _ := pgxmock.NewPool()
+	defer mock.Close()
+	now := time.Now()
+	status := true
+	mock.ExpectQuery("WHERE status = \\$1 AND assignee = \\$2").
+		WithArgs(true, "Sara", 10, 5).
+		WillReturnRows(
+			pgxmock.NewRows([]string{"id", "title", "status", "assignee", "created_at", "updated_at"}).
+				AddRow(int64(1), "a", true, "Sara", now, now),
+		)
+	s := NewPostgresStore(mock)
+	tasks, err := s.List(context.Background(), ListFilter{Limit: 10, Offset: 5, Status: &status, Assignee: "Sara"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tasks) != 1 || tasks[0].Assignee != "Sara" || !tasks[0].Status {
+		t.Fatalf("unexpected tasks: %+v", tasks)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
 	}
 }

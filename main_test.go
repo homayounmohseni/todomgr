@@ -20,7 +20,7 @@ type stubStore struct {
 	tasks map[int64]model.Task
 }
 
-func (s *stubStore) List(_ context.Context) ([]model.Task, error) {
+func (s *stubStore) List(_ context.Context, _ store.ListFilter) ([]model.Task, error) {
 	return []model.Task{{ID: 1, Title: "a"}}, nil
 }
 
@@ -31,15 +31,15 @@ func (s *stubStore) Get(_ context.Context, id int64) (model.Task, error) {
 	return model.Task{ID: 1, Title: "a"}, nil
 }
 
-func (s *stubStore) Create(_ context.Context, title string) (model.Task, error) {
+func (s *stubStore) Create(_ context.Context, title, assignee string) (model.Task, error) {
 	if title == "boom" {
 		return model.Task{}, errors.New("db down")
 	}
-	return model.Task{ID: 1, Title: title}, nil
+	return model.Task{ID: 1, Title: title, Assignee: assignee}, nil
 }
 
-func (s *stubStore) Update(_ context.Context, id int64, title string, done bool) (model.Task, error) {
-	return model.Task{ID: id, Title: title, Done: done}, nil
+func (s *stubStore) Update(_ context.Context, id int64, title string, status bool, assignee string) (model.Task, error) {
+	return model.Task{ID: id, Title: title, Status: status, Assignee: assignee}, nil
 }
 
 func (s *stubStore) Delete(_ context.Context, _ int64) error { return nil }

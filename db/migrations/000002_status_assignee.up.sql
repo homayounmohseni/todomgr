@@ -1,0 +1,2 @@
+ALTER TABLE tasks RENAME COLUMN done TO status;
+ALTER TABLE tasks ADD COLUMN assignee TEXT NOT NULL DEFAULT '';

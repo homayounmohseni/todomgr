@@ -52,7 +52,7 @@ func (h *TaskHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	t, err := h.Store.Create(c.Request.Context(), in.Title)
+	t, err := h.Store.Create(c.Request.Context(), in.Title, in.Assignee)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "create failed"})
 		return
@@ -64,11 +64,34 @@ func (h *TaskHandler) Create(c *gin.Context) {
 // @Summary List tasks
 // @Tags tasks
 // @Produce json
+// @Param limit query int false "Page size (1-100, default 20)"
+// @Param offset query int false "Rows to skip (default 0)"
+// @Param status query boolean false "Filter by status"
+// @Param assignee query string false "Filter by assignee (exact match)"
 // @Success 200 {array} model.Task
+// @Failure 400 {object} model.ErrorResponse
 // @Failure 500 {object} model.ErrorResponse
 // @Router /tasks [get]
 func (h *TaskHandler) List(c *gin.Context) {
-	tasks, err := h.Store.List(c.Request.Context())
+	var q model.ListTasksQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	limit := q.Limit
+	if limit == 0 {
+		limit = 20
+	}
+	if limit < 1 || limit > 100 || q.Offset < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid pagination"})
+		return
+	}
+	tasks, err := h.Store.List(c.Request.Context(), store.ListFilter{
+		Limit:    limit,
+		Offset:   q.Offset,
+		Status:   q.Status,
+		Assignee: q.Assignee,
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "list failed"})
 		return
@@ -127,7 +150,7 @@ func (h *TaskHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	t, err := h.Store.Update(c.Request.Context(), id, in.Title, in.Done)
+	t, err := h.Store.Update(c.Request.Context(), id, in.Title, in.Status, in.Assignee)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})

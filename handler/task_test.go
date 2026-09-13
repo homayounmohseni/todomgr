@@ -23,7 +23,7 @@ func newFakeStore() *fakeStore {
 	return &fakeStore{tasks: map[int64]model.Task{}, nextID: 1}
 }
 
-func (f *fakeStore) List(_ context.Context) ([]model.Task, error) {
+func (f *fakeStore) List(_ context.Context, _ store.ListFilter) ([]model.Task, error) {
 	out := []model.Task{}
 	for _, t := range f.tasks {
 		out = append(out, t)
@@ -39,20 +39,21 @@ func (f *fakeStore) Get(_ context.Context, id int64) (model.Task, error) {
 	return t, nil
 }
 
-func (f *fakeStore) Create(_ context.Context, title string) (model.Task, error) {
-	t := model.Task{ID: f.nextID, Title: title}
+func (f *fakeStore) Create(_ context.Context, title, assignee string) (model.Task, error) {
+	t := model.Task{ID: f.nextID, Title: title, Assignee: assignee}
 	f.tasks[t.ID] = t
 	f.nextID++
 	return t, nil
 }
 
-func (f *fakeStore) Update(_ context.Context, id int64, title string, done bool) (model.Task, error) {
+func (f *fakeStore) Update(_ context.Context, id int64, title string, status bool, assignee string) (model.Task, error) {
 	t, ok := f.tasks[id]
 	if !ok {
 		return model.Task{}, store.ErrNotFound
 	}
 	t.Title = title
-	t.Done = done
+	t.Status = status
+	t.Assignee = assignee
 	f.tasks[id] = t
 	return t, nil
 }
@@ -122,12 +123,12 @@ func TestGetNotFound(t *testing.T) {
 func TestUpdateAndDelete(t *testing.T) {
 	fs := newFakeStore()
 	r := setupRouter(fs)
-	if _, err := fs.Create(context.Background(), "x"); err != nil {
+	if _, err := fs.Create(context.Background(), "x", ""); err != nil {
 		t.Fatal(err)
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("PUT", "/tasks/1", bytes.NewBufferString(`{"title":"y","done":true}`))
+	req, _ := http.NewRequest("PUT", "/tasks/1", bytes.NewBufferString(`{"title":"y","status":true}`))
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {

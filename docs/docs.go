@@ -65,6 +65,32 @@ const docTemplate = `{
                     "tasks"
                 ],
                 "summary": "List tasks",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page size (1-100, default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Rows to skip (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by assignee (exact match)",
+                        "name": "assignee",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -73,6 +99,12 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/model.Task"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "500": {
@@ -278,6 +310,10 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "assignee": {
+                    "type": "string",
+                    "example": "Sara"
+                },
                 "title": {
                     "type": "string",
                     "maxLength": 500,
@@ -298,10 +334,14 @@ const docTemplate = `{
         "model.Task": {
             "type": "object",
             "properties": {
+                "assignee": {
+                    "type": "string",
+                    "example": "Sara"
+                },
                 "created_at": {
                     "type": "string"
                 },
-                "done": {
+                "status": {
                     "type": "boolean",
                     "example": false
                 },
@@ -324,7 +364,11 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
-                "done": {
+                "assignee": {
+                    "type": "string",
+                    "example": "Sara"
+                },
+                "status": {
                     "type": "boolean",
                     "example": true
                 },

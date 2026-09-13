@@ -14,27 +14,27 @@ import (
 )
 
 type stubStore struct {
-	listFn   func(ctx context.Context) ([]model.Task, error)
+	listFn   func(ctx context.Context, f store.ListFilter) ([]model.Task, error)
 	getFn    func(ctx context.Context, id int64) (model.Task, error)
-	createFn func(ctx context.Context, title string) (model.Task, error)
-	updateFn func(ctx context.Context, id int64, title string, done bool) (model.Task, error)
+	createFn func(ctx context.Context, title, assignee string) (model.Task, error)
+	updateFn func(ctx context.Context, id int64, title string, status bool, assignee string) (model.Task, error)
 	deleteFn func(ctx context.Context, id int64) error
 }
 
-func (s *stubStore) List(ctx context.Context) ([]model.Task, error) {
-	return s.listFn(ctx)
+func (s *stubStore) List(ctx context.Context, f store.ListFilter) ([]model.Task, error) {
+	return s.listFn(ctx, f)
 }
 
 func (s *stubStore) Get(ctx context.Context, id int64) (model.Task, error) {
 	return s.getFn(ctx, id)
 }
 
-func (s *stubStore) Create(ctx context.Context, title string) (model.Task, error) {
-	return s.createFn(ctx, title)
+func (s *stubStore) Create(ctx context.Context, title, assignee string) (model.Task, error) {
+	return s.createFn(ctx, title, assignee)
 }
 
-func (s *stubStore) Update(ctx context.Context, id int64, title string, done bool) (model.Task, error) {
-	return s.updateFn(ctx, id, title, done)
+func (s *stubStore) Update(ctx context.Context, id int64, title string, status bool, assignee string) (model.Task, error) {
+	return s.updateFn(ctx, id, title, status, assignee)
 }
 
 func (s *stubStore) Delete(ctx context.Context, id int64) error {
@@ -59,8 +59,8 @@ func doReq(r interface {
 
 func TestListSuccess(t *testing.T) {
 	s := &stubStore{
-		listFn: func(_ context.Context) ([]model.Task, error) {
-			return []model.Task{{ID: 1, Title: "a"}, {ID: 2, Title: "b", Done: true}}, nil
+		listFn: func(_ context.Context, _ store.ListFilter) ([]model.Task, error) {
+			return []model.Task{{ID: 1, Title: "a"}, {ID: 2, Title: "b", Status: true}}, nil
 		},
 	}
 	r := setupRouter(s)
@@ -75,7 +75,7 @@ func TestListSuccess(t *testing.T) {
 
 func TestListEmptyReturnsArray(t *testing.T) {
 	s := &stubStore{
-		listFn: func(_ context.Context) ([]model.Task, error) { return nil, nil },
+		listFn: func(_ context.Context, _ store.ListFilter) ([]model.Task, error) { return nil, nil },
 	}
 	r := setupRouter(s)
 	w := doReq(r, "GET", "/tasks", "")
@@ -89,7 +89,7 @@ func TestListEmptyReturnsArray(t *testing.T) {
 
 func TestListFailure(t *testing.T) {
 	s := &stubStore{
-		listFn: func(_ context.Context) ([]model.Task, error) {
+		listFn: func(_ context.Context, _ store.ListFilter) ([]model.Task, error) {
 			return nil, errors.New("db down")
 		},
 	}
@@ -101,7 +101,7 @@ func TestListFailure(t *testing.T) {
 
 func TestCreateStoreFailure(t *testing.T) {
 	s := &stubStore{
-		createFn: func(_ context.Context, _ string) (model.Task, error) {
+		createFn: func(_ context.Context, _, _ string) (model.Task, error) {
 			return model.Task{}, errors.New("db down")
 		},
 	}
@@ -156,7 +156,7 @@ func TestUpdateValidation(t *testing.T) {
 
 func TestUpdateNotFound(t *testing.T) {
 	s := &stubStore{
-		updateFn: func(_ context.Context, _ int64, _ string, _ bool) (model.Task, error) {
+		updateFn: func(_ context.Context, _ int64, _ string, _ bool, _ string) (model.Task, error) {
 			return model.Task{}, store.ErrNotFound
 		},
 	}
@@ -168,7 +168,7 @@ func TestUpdateNotFound(t *testing.T) {
 
 func TestUpdateStoreFailure(t *testing.T) {
 	s := &stubStore{
-		updateFn: func(_ context.Context, _ int64, _ string, _ bool) (model.Task, error) {
+		updateFn: func(_ context.Context, _ int64, _ string, _ bool, _ string) (model.Task, error) {
 			return model.Task{}, errors.New("db down")
 		},
 	}
@@ -202,5 +202,32 @@ func TestDeleteStoreFailure(t *testing.T) {
 	r := setupRouter(s)
 	if w := doReq(r, "DELETE", "/tasks/1", ""); w.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want 500", w.Code)
+	}
+}
+
+func TestListInvalidPagination(t *testing.T) {
+	r := setupRouter(newFakeStore())
+	for _, p := range []string{"/tasks?limit=0x", "/tasks?limit=200", "/tasks?limit=-5", "/tasks?offset=-1", "/tasks?status=maybe"} {
+		if w := doReq(r, "GET", p, ""); w.Code != http.StatusBadRequest {
+			t.Fatalf("path %q: status = %d, want 400", p, w.Code)
+		}
+	}
+}
+
+func TestListWithFilters(t *testing.T) {
+	var got store.ListFilter
+	s := &stubStore{
+		listFn: func(_ context.Context, f store.ListFilter) ([]model.Task, error) {
+			got = f
+			return []model.Task{}, nil
+		},
+	}
+	r := setupRouter(s)
+	w := doReq(r, "GET", "/tasks?limit=10&offset=5&status=true&assignee=Sara", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (%s)", w.Code, w.Body.String())
+	}
+	if got.Limit != 10 || got.Offset != 5 || got.Assignee != "Sara" || got.Status == nil || !*got.Status {
+		t.Fatalf("unexpected filter: %+v", got)
 	}
 }
