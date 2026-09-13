@@ -33,6 +33,20 @@ var (
 			Help: "Current number of tasks.",
 		},
 	)
+
+	cacheHits = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "cache_hits_total",
+			Help: "Total cache hits for single task queries.",
+		},
+	)
+
+	cacheMisses = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "cache_misses_total",
+			Help: "Total cache misses for single task queries.",
+		},
+	)
 )
 
 func TasksInc() { tasksCount.Inc() }
@@ -40,6 +54,10 @@ func TasksInc() { tasksCount.Inc() }
 func TasksDec() { tasksCount.Dec() }
 
 func TasksSet(n float64) { tasksCount.Set(n) }
+
+func CacheHit() { cacheHits.Inc() }
+
+func CacheMiss() { cacheMisses.Inc() }
 
 func Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

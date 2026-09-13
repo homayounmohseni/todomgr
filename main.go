@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/homayounmohseni/todomgr/handler"
 	"github.com/homayounmohseni/todomgr/observability"
@@ -15,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -64,6 +66,14 @@ func configFromEnv() (dbURL, port string) {
 	return dbURL, port
 }
 
+func redisURLFromEnv() string {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisURL = "redis://localhost:6379/0"
+	}
+	return redisURL
+}
+
 func main() {
 	dbURL, port := configFromEnv()
 
@@ -76,7 +86,18 @@ func main() {
 	if err := pool.Ping(ctx); err != nil {
 		log.Fatalf("db ping: %v", err)
 	}
-	r := NewRouter(store.NewPostgresStore(pool))
+	opt, err := redis.ParseURL(redisURLFromEnv())
+	if err != nil {
+		log.Fatalf("redis url: %v", err)
+	}
+	rdb := redis.NewClient(opt)
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		log.Printf("redis unavailable (%v): list cache will fail open", err)
+	}
+
+	var ts store.TaskStore = store.NewPostgresStore(pool)
+	ts = store.NewCachedTaskStore(ts, store.NewRedisCache(rdb), time.Minute)
+	r := NewRouter(ts)
 
 	log.Printf("listening on :%s", port)
 	if err := r.Run(":" + port); err != nil {
