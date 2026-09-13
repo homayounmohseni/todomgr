@@ -195,3 +195,55 @@ func TestCachedCorruptEntryIsMiss(t *testing.T) {
 		t.Fatalf("store called %d times, want 1", inner.getCalls)
 	}
 }
+
+func TestCachedCreateTouchesNothing(t *testing.T) {
+	inner := &countingStore{}
+	fc := newFakeCache()
+	c := NewCachedTaskStore(inner, fc, time.Minute)
+	if _, err := c.Get(context.Background(), 5); err != nil {
+		t.Fatal(err)
+	}
+	got, err := c.Create(context.Background(), "x", "Sara")
+	if err != nil || got.Assignee != "Sara" {
+		t.Fatalf("got %+v err %v", got, err)
+	}
+	if len(fc.deleted) != 0 {
+		t.Fatalf("deleted = %v, want none (new id has no cache entry)", fc.deleted)
+	}
+}
+
+func TestCachedListPassthrough(t *testing.T) {
+	inner := &countingStore{task: model.Task{Title: "a"}}
+	c := NewCachedTaskStore(inner, newFakeCache(), time.Minute)
+	tasks, err := c.List(context.Background(), ListFilter{Limit: 20})
+	if err != nil || len(tasks) != 1 || inner.listCalls != 1 {
+		t.Fatalf("got %+v err %v calls %d", tasks, err, inner.listCalls)
+	}
+}
+
+func TestCachedWriteErrorSkipsInvalidate(t *testing.T) {
+	inner := &errStore{}
+	fc := newFakeCache()
+	c := NewCachedTaskStore(inner, fc, time.Minute)
+	if _, err := c.Update(context.Background(), 5, "x", true, ""); err == nil {
+		t.Fatal("want error")
+	}
+	if err := c.Delete(context.Background(), 5); err == nil {
+		t.Fatal("want error")
+	}
+	if len(fc.deleted) != 0 {
+		t.Fatalf("deleted = %v, want none", fc.deleted)
+	}
+}
+
+type errStore struct {
+	countingStore
+}
+
+func (s *errStore) Update(_ context.Context, _ int64, _ string, _ bool, _ string) (model.Task, error) {
+	return model.Task{}, errors.New("db down")
+}
+
+func (s *errStore) Delete(_ context.Context, _ int64) error {
+	return errors.New("db down")
+}

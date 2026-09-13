@@ -16,9 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type stubStore struct {
-	tasks map[int64]model.Task
-}
+type stubStore struct{}
 
 func (s *stubStore) List(_ context.Context, _ store.ListFilter) ([]model.Task, error) {
 	return []model.Task{{ID: 1, Title: "a"}}, nil
@@ -65,6 +63,17 @@ func TestConfigFromEnvCustom(t *testing.T) {
 	}
 }
 
+func TestRedisURLFromEnv(t *testing.T) {
+	t.Setenv("REDIS_URL", "")
+	if got := redisURLFromEnv(); got != "redis://localhost:6379/0" {
+		t.Fatalf("got %q", got)
+	}
+	t.Setenv("REDIS_URL", "redis://redis:6379/0")
+	if got := redisURLFromEnv(); got != "redis://redis:6379/0" {
+		t.Fatalf("got %q", got)
+	}
+}
+
 func TestHealthz(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := NewRouter(&stubStore{})
@@ -94,7 +103,7 @@ func TestMetricsEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(resp.Body)
 	for _, want := range []string{"http_requests_total", "http_request_latency_seconds", "tasks_count"} {
 		if !strings.Contains(string(body), want) {
