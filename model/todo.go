@@ -19,7 +19,6 @@ type UpdateTodoInput struct {
 	Done  bool   `json:"done" example:"true"`
 }
 
-// ErrorResponse is the standard error payload.
 type ErrorResponse struct {
 	Error string `json:"error" example:"not found"`
 }

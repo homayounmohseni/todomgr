@@ -7,12 +7,14 @@ import (
 	"os"
 
 	"github.com/homayounmohseni/todomgr/handler"
+	"github.com/homayounmohseni/todomgr/observability"
 	"github.com/homayounmohseni/todomgr/store"
 
 	_ "github.com/homayounmohseni/todomgr/docs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -24,14 +26,14 @@ import (
 // @BasePath /
 func NewRouter(s store.TodoStore) *gin.Engine {
 	r := gin.Default()
+	r.Use(observability.Middleware())
 	r.GET("/healthz", Healthz)
 	handler.NewTodoHandler(s).RegisterRoutes(r)
+	r.GET("/metrics", Metrics)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
 }
 
-// Healthz reports liveness.
-//
 // @Summary Health check
 // @Tags ops
 // @Produce json
@@ -39,6 +41,15 @@ func NewRouter(s store.TodoStore) *gin.Engine {
 // @Router /healthz [get]
 func Healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// @Summary Prometheus metrics
+// @Tags ops
+// @Produce text/plain
+// @Success 200 {string} string "Prometheus exposition format"
+// @Router /metrics [get]
+func Metrics(c *gin.Context) {
+	promhttp.Handler().ServeHTTP(c.Writer, c.Request)
 }
 
 func configFromEnv() (dbURL, port string) {

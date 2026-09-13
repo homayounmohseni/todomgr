@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/homayounmohseni/todomgr/model"
+	"github.com/homayounmohseni/todomgr/observability"
 	"github.com/homayounmohseni/todomgr/store"
 
 	"github.com/gin-gonic/gin"
@@ -36,8 +37,6 @@ func parseID(c *gin.Context) (int64, bool) {
 	return id, true
 }
 
-// Create creates a new todo.
-//
 // @Summary Create todo
 // @Tags todos
 // @Accept json
@@ -58,11 +57,10 @@ func (h *TodoHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "create failed"})
 		return
 	}
+	observability.TasksInc()
 	c.JSON(http.StatusCreated, t)
 }
 
-// List returns all todos.
-//
 // @Summary List todos
 // @Tags todos
 // @Produce json
@@ -78,11 +76,10 @@ func (h *TodoHandler) List(c *gin.Context) {
 	if todos == nil {
 		todos = []model.Todo{}
 	}
+	observability.TasksSet(float64(len(todos)))
 	c.JSON(http.StatusOK, todos)
 }
 
-// Get returns a single todo by ID.
-//
 // @Summary Get todo
 // @Tags todos
 // @Produce json
@@ -109,8 +106,6 @@ func (h *TodoHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
-// Update replaces a todo's title and done flag.
-//
 // @Summary Update todo
 // @Tags todos
 // @Accept json
@@ -144,8 +139,6 @@ func (h *TodoHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
-// Delete removes a todo by ID.
-//
 // @Summary Delete todo
 // @Tags todos
 // @Produce json
@@ -168,5 +161,6 @@ func (h *TodoHandler) Delete(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "delete failed"})
 		return
 	}
+	observability.TasksDec()
 	c.Status(http.StatusNoContent)
 }

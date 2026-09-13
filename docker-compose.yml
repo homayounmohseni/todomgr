@@ -26,6 +26,15 @@ services:
       timeout: 2s
       retries: 5
     restart: unless-stopped
+  prometheus:
+    image: prom/prometheus:v3.6.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - app
+    restart: unless-stopped
 
 volumes:
   todo-data:

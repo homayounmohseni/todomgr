@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/homayounmohseni/todomgr/model"
@@ -71,6 +73,33 @@ func TestHealthz(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d", w.Code)
+	}
+}
+
+func TestMetricsEndpoint(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := NewRouter(&stubStore{})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/todos", bytes.NewBufferString(`{"title":"a"}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create status = %d", w.Code)
+	}
+
+	srv := httptest.NewServer(r)
+	defer srv.Close()
+	resp, err := http.Get(srv.URL + "/metrics")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	for _, want := range []string{"http_requests_total", "http_request_latency_seconds", "tasks_count"} {
+		if !strings.Contains(string(body), want) {
+			t.Fatalf("metrics missing %q", want)
+		}
 	}
 }
 

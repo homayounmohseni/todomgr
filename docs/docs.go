@@ -37,6 +37,25 @@ const docTemplate = `{
                 }
             }
         },
+        "/metrics": {
+            "get": {
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "ops"
+                ],
+                "summary": "Prometheus metrics",
+                "responses": {
+                    "200": {
+                        "description": "Prometheus exposition format",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/todos": {
             "get": {
                 "produces": [
