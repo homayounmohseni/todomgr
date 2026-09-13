@@ -14,26 +14,26 @@ import (
 )
 
 type stubStore struct {
-	listFn   func(ctx context.Context) ([]model.Todo, error)
-	getFn    func(ctx context.Context, id int64) (model.Todo, error)
-	createFn func(ctx context.Context, title string) (model.Todo, error)
-	updateFn func(ctx context.Context, id int64, title string, done bool) (model.Todo, error)
+	listFn   func(ctx context.Context) ([]model.Task, error)
+	getFn    func(ctx context.Context, id int64) (model.Task, error)
+	createFn func(ctx context.Context, title string) (model.Task, error)
+	updateFn func(ctx context.Context, id int64, title string, done bool) (model.Task, error)
 	deleteFn func(ctx context.Context, id int64) error
 }
 
-func (s *stubStore) List(ctx context.Context) ([]model.Todo, error) {
+func (s *stubStore) List(ctx context.Context) ([]model.Task, error) {
 	return s.listFn(ctx)
 }
 
-func (s *stubStore) Get(ctx context.Context, id int64) (model.Todo, error) {
+func (s *stubStore) Get(ctx context.Context, id int64) (model.Task, error) {
 	return s.getFn(ctx, id)
 }
 
-func (s *stubStore) Create(ctx context.Context, title string) (model.Todo, error) {
+func (s *stubStore) Create(ctx context.Context, title string) (model.Task, error) {
 	return s.createFn(ctx, title)
 }
 
-func (s *stubStore) Update(ctx context.Context, id int64, title string, done bool) (model.Todo, error) {
+func (s *stubStore) Update(ctx context.Context, id int64, title string, done bool) (model.Task, error) {
 	return s.updateFn(ctx, id, title, done)
 }
 
@@ -59,12 +59,12 @@ func doReq(r interface {
 
 func TestListSuccess(t *testing.T) {
 	s := &stubStore{
-		listFn: func(_ context.Context) ([]model.Todo, error) {
-			return []model.Todo{{ID: 1, Title: "a"}, {ID: 2, Title: "b", Done: true}}, nil
+		listFn: func(_ context.Context) ([]model.Task, error) {
+			return []model.Task{{ID: 1, Title: "a"}, {ID: 2, Title: "b", Done: true}}, nil
 		},
 	}
 	r := setupRouter(s)
-	w := doReq(r, "GET", "/todos", "")
+	w := doReq(r, "GET", "/tasks", "")
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (%s)", w.Code, w.Body.String())
 	}
@@ -75,10 +75,10 @@ func TestListSuccess(t *testing.T) {
 
 func TestListEmptyReturnsArray(t *testing.T) {
 	s := &stubStore{
-		listFn: func(_ context.Context) ([]model.Todo, error) { return nil, nil },
+		listFn: func(_ context.Context) ([]model.Task, error) { return nil, nil },
 	}
 	r := setupRouter(s)
-	w := doReq(r, "GET", "/todos", "")
+	w := doReq(r, "GET", "/tasks", "")
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d", w.Code)
 	}
@@ -89,57 +89,57 @@ func TestListEmptyReturnsArray(t *testing.T) {
 
 func TestListFailure(t *testing.T) {
 	s := &stubStore{
-		listFn: func(_ context.Context) ([]model.Todo, error) {
+		listFn: func(_ context.Context) ([]model.Task, error) {
 			return nil, errors.New("db down")
 		},
 	}
 	r := setupRouter(s)
-	if w := doReq(r, "GET", "/todos", ""); w.Code != http.StatusInternalServerError {
+	if w := doReq(r, "GET", "/tasks", ""); w.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want 500", w.Code)
 	}
 }
 
 func TestCreateStoreFailure(t *testing.T) {
 	s := &stubStore{
-		createFn: func(_ context.Context, _ string) (model.Todo, error) {
-			return model.Todo{}, errors.New("db down")
+		createFn: func(_ context.Context, _ string) (model.Task, error) {
+			return model.Task{}, errors.New("db down")
 		},
 	}
 	r := setupRouter(s)
-	if w := doReq(r, "POST", "/todos", `{"title":"x"}`); w.Code != http.StatusInternalServerError {
+	if w := doReq(r, "POST", "/tasks", `{"title":"x"}`); w.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want 500", w.Code)
 	}
 }
 
 func TestCreateInvalidJSON(t *testing.T) {
 	r := setupRouter(newFakeStore())
-	if w := doReq(r, "POST", "/todos", `not-json`); w.Code != http.StatusBadRequest {
+	if w := doReq(r, "POST", "/tasks", `not-json`); w.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", w.Code)
 	}
 }
 
 func TestGetInvalidID(t *testing.T) {
 	r := setupRouter(newFakeStore())
-	if w := doReq(r, "GET", "/todos/abc", ""); w.Code != http.StatusBadRequest {
+	if w := doReq(r, "GET", "/tasks/abc", ""); w.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", w.Code)
 	}
 }
 
 func TestGetStoreFailure(t *testing.T) {
 	s := &stubStore{
-		getFn: func(_ context.Context, _ int64) (model.Todo, error) {
-			return model.Todo{}, errors.New("db down")
+		getFn: func(_ context.Context, _ int64) (model.Task, error) {
+			return model.Task{}, errors.New("db down")
 		},
 	}
 	r := setupRouter(s)
-	if w := doReq(r, "GET", "/todos/1", ""); w.Code != http.StatusInternalServerError {
+	if w := doReq(r, "GET", "/tasks/1", ""); w.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want 500", w.Code)
 	}
 }
 
 func TestUpdateInvalidID(t *testing.T) {
 	r := setupRouter(newFakeStore())
-	if w := doReq(r, "PUT", "/todos/abc", `{"title":"x"}`); w.Code != http.StatusBadRequest {
+	if w := doReq(r, "PUT", "/tasks/abc", `{"title":"x"}`); w.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", w.Code)
 	}
 }
@@ -148,7 +148,7 @@ func TestUpdateValidation(t *testing.T) {
 	r := setupRouter(newFakeStore())
 	cases := []string{`{"title":""}`, `not-json`, `{}`}
 	for _, b := range cases {
-		if w := doReq(r, "PUT", "/todos/1", b); w.Code != http.StatusBadRequest {
+		if w := doReq(r, "PUT", "/tasks/1", b); w.Code != http.StatusBadRequest {
 			t.Fatalf("body %q: status = %d, want 400", b, w.Code)
 		}
 	}
@@ -156,31 +156,31 @@ func TestUpdateValidation(t *testing.T) {
 
 func TestUpdateNotFound(t *testing.T) {
 	s := &stubStore{
-		updateFn: func(_ context.Context, _ int64, _ string, _ bool) (model.Todo, error) {
-			return model.Todo{}, store.ErrNotFound
+		updateFn: func(_ context.Context, _ int64, _ string, _ bool) (model.Task, error) {
+			return model.Task{}, store.ErrNotFound
 		},
 	}
 	r := setupRouter(s)
-	if w := doReq(r, "PUT", "/todos/999", `{"title":"x"}`); w.Code != http.StatusNotFound {
+	if w := doReq(r, "PUT", "/tasks/999", `{"title":"x"}`); w.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", w.Code)
 	}
 }
 
 func TestUpdateStoreFailure(t *testing.T) {
 	s := &stubStore{
-		updateFn: func(_ context.Context, _ int64, _ string, _ bool) (model.Todo, error) {
-			return model.Todo{}, errors.New("db down")
+		updateFn: func(_ context.Context, _ int64, _ string, _ bool) (model.Task, error) {
+			return model.Task{}, errors.New("db down")
 		},
 	}
 	r := setupRouter(s)
-	if w := doReq(r, "PUT", "/todos/1", `{"title":"x"}`); w.Code != http.StatusInternalServerError {
+	if w := doReq(r, "PUT", "/tasks/1", `{"title":"x"}`); w.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want 500", w.Code)
 	}
 }
 
 func TestDeleteInvalidID(t *testing.T) {
 	r := setupRouter(newFakeStore())
-	if w := doReq(r, "DELETE", "/todos/abc", ""); w.Code != http.StatusBadRequest {
+	if w := doReq(r, "DELETE", "/tasks/abc", ""); w.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", w.Code)
 	}
 }
@@ -190,7 +190,7 @@ func TestDeleteNotFound(t *testing.T) {
 		deleteFn: func(_ context.Context, _ int64) error { return store.ErrNotFound },
 	}
 	r := setupRouter(s)
-	if w := doReq(r, "DELETE", "/todos/999", ""); w.Code != http.StatusNotFound {
+	if w := doReq(r, "DELETE", "/tasks/999", ""); w.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", w.Code)
 	}
 }
@@ -200,7 +200,7 @@ func TestDeleteStoreFailure(t *testing.T) {
 		deleteFn: func(_ context.Context, _ int64) error { return errors.New("db down") },
 	}
 	r := setupRouter(s)
-	if w := doReq(r, "DELETE", "/todos/1", ""); w.Code != http.StatusInternalServerError {
+	if w := doReq(r, "DELETE", "/tasks/1", ""); w.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want 500", w.Code)
 	}
 }

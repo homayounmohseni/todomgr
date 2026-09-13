@@ -12,20 +12,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type TodoHandler struct {
-	Store store.TodoStore
+type TaskHandler struct {
+	Store store.TaskStore
 }
 
-func NewTodoHandler(s store.TodoStore) *TodoHandler {
-	return &TodoHandler{Store: s}
+func NewTaskHandler(s store.TaskStore) *TaskHandler {
+	return &TaskHandler{Store: s}
 }
 
-func (h *TodoHandler) RegisterRoutes(r *gin.Engine) {
-	r.POST("/todos", h.Create)
-	r.GET("/todos", h.List)
-	r.GET("/todos/:id", h.Get)
-	r.PUT("/todos/:id", h.Update)
-	r.DELETE("/todos/:id", h.Delete)
+func (h *TaskHandler) RegisterRoutes(r *gin.Engine) {
+	r.POST("/tasks", h.Create)
+	r.GET("/tasks", h.List)
+	r.GET("/tasks/:id", h.Get)
+	r.PUT("/tasks/:id", h.Update)
+	r.DELETE("/tasks/:id", h.Delete)
 }
 
 func parseID(c *gin.Context) (int64, bool) {
@@ -37,17 +37,17 @@ func parseID(c *gin.Context) (int64, bool) {
 	return id, true
 }
 
-// @Summary Create todo
-// @Tags todos
+// @Summary Create task
+// @Tags tasks
 // @Accept json
 // @Produce json
-// @Param todo body model.CreateTodoInput true "Todo to create"
-// @Success 201 {object} model.Todo
+// @Param task body model.CreateTaskInput true "Task to create"
+// @Success 201 {object} model.Task
 // @Failure 400 {object} model.ErrorResponse
 // @Failure 500 {object} model.ErrorResponse
-// @Router /todos [post]
-func (h *TodoHandler) Create(c *gin.Context) {
-	var in model.CreateTodoInput
+// @Router /tasks [post]
+func (h *TaskHandler) Create(c *gin.Context) {
+	var in model.CreateTaskInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -61,35 +61,35 @@ func (h *TodoHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, t)
 }
 
-// @Summary List todos
-// @Tags todos
+// @Summary List tasks
+// @Tags tasks
 // @Produce json
-// @Success 200 {array} model.Todo
+// @Success 200 {array} model.Task
 // @Failure 500 {object} model.ErrorResponse
-// @Router /todos [get]
-func (h *TodoHandler) List(c *gin.Context) {
-	todos, err := h.Store.List(c.Request.Context())
+// @Router /tasks [get]
+func (h *TaskHandler) List(c *gin.Context) {
+	tasks, err := h.Store.List(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "list failed"})
 		return
 	}
-	if todos == nil {
-		todos = []model.Todo{}
+	if tasks == nil {
+		tasks = []model.Task{}
 	}
-	observability.TasksSet(float64(len(todos)))
-	c.JSON(http.StatusOK, todos)
+	observability.TasksSet(float64(len(tasks)))
+	c.JSON(http.StatusOK, tasks)
 }
 
-// @Summary Get todo
-// @Tags todos
+// @Summary Get task
+// @Tags tasks
 // @Produce json
-// @Param id path int true "Todo ID"
-// @Success 200 {object} model.Todo
+// @Param id path int true "Task ID"
+// @Success 200 {object} model.Task
 // @Failure 400 {object} model.ErrorResponse
 // @Failure 404 {object} model.ErrorResponse
 // @Failure 500 {object} model.ErrorResponse
-// @Router /todos/{id} [get]
-func (h *TodoHandler) Get(c *gin.Context) {
+// @Router /tasks/{id} [get]
+func (h *TaskHandler) Get(c *gin.Context) {
 	id, ok := parseID(c)
 	if !ok {
 		return
@@ -106,23 +106,23 @@ func (h *TodoHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
-// @Summary Update todo
-// @Tags todos
+// @Summary Update task
+// @Tags tasks
 // @Accept json
 // @Produce json
-// @Param id path int true "Todo ID"
-// @Param todo body model.UpdateTodoInput true "Updated fields"
-// @Success 200 {object} model.Todo
+// @Param id path int true "Task ID"
+// @Param task body model.UpdateTaskInput true "Updated fields"
+// @Success 200 {object} model.Task
 // @Failure 400 {object} model.ErrorResponse
 // @Failure 404 {object} model.ErrorResponse
 // @Failure 500 {object} model.ErrorResponse
-// @Router /todos/{id} [put]
-func (h *TodoHandler) Update(c *gin.Context) {
+// @Router /tasks/{id} [put]
+func (h *TaskHandler) Update(c *gin.Context) {
 	id, ok := parseID(c)
 	if !ok {
 		return
 	}
-	var in model.UpdateTodoInput
+	var in model.UpdateTaskInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -139,16 +139,16 @@ func (h *TodoHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
-// @Summary Delete todo
-// @Tags todos
+// @Summary Delete task
+// @Tags tasks
 // @Produce json
-// @Param id path int true "Todo ID"
+// @Param id path int true "Task ID"
 // @Success 204 "No Content"
 // @Failure 400 {object} model.ErrorResponse
 // @Failure 404 {object} model.ErrorResponse
 // @Failure 500 {object} model.ErrorResponse
-// @Router /todos/{id} [delete]
-func (h *TodoHandler) Delete(c *gin.Context) {
+// @Router /tasks/{id} [delete]
+func (h *TaskHandler) Delete(c *gin.Context) {
 	id, ok := parseID(c)
 	if !ok {
 		return

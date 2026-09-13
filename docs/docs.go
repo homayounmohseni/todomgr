@@ -56,22 +56,22 @@ const docTemplate = `{
                 }
             }
         },
-        "/todos": {
+        "/tasks": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "List todos",
+                "summary": "List tasks",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Todo"
+                                "$ref": "#/definitions/model.Task"
                             }
                         }
                     },
@@ -91,17 +91,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "Create todo",
+                "summary": "Create task",
                 "parameters": [
                     {
-                        "description": "Todo to create",
-                        "name": "todo",
+                        "description": "Task to create",
+                        "name": "task",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.CreateTodoInput"
+                            "$ref": "#/definitions/model.CreateTaskInput"
                         }
                     }
                 ],
@@ -109,7 +109,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.Todo"
+                            "$ref": "#/definitions/model.Task"
                         }
                     },
                     "400": {
@@ -127,19 +127,19 @@ const docTemplate = `{
                 }
             }
         },
-        "/todos/{id}": {
+        "/tasks/{id}": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "Get todo",
+                "summary": "Get task",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Todo ID",
+                        "description": "Task ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -149,7 +149,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Todo"
+                            "$ref": "#/definitions/model.Task"
                         }
                     },
                     "400": {
@@ -180,24 +180,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "Update todo",
+                "summary": "Update task",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Todo ID",
+                        "description": "Task ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
                         "description": "Updated fields",
-                        "name": "todo",
+                        "name": "task",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UpdateTodoInput"
+                            "$ref": "#/definitions/model.UpdateTaskInput"
                         }
                     }
                 ],
@@ -205,7 +205,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Todo"
+                            "$ref": "#/definitions/model.Task"
                         }
                     },
                     "400": {
@@ -233,13 +233,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "Delete todo",
+                "summary": "Delete task",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Todo ID",
+                        "description": "Task ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -272,7 +272,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "model.CreateTodoInput": {
+        "model.CreateTaskInput": {
             "type": "object",
             "required": [
                 "title"
@@ -295,7 +295,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Todo": {
+        "model.Task": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -318,7 +318,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.UpdateTodoInput": {
+        "model.UpdateTaskInput": {
             "type": "object",
             "required": [
                 "title"
@@ -345,8 +345,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Todo Manager API",
-	Description:      "Simple todo CRUD API.",
+	Title:            "Task Manager API",
+	Description:      "Simple task CRUD API.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

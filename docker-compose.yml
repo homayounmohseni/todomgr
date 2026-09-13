@@ -9,7 +9,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
+  migrate:
+    image: migrate/migrate:v4.20.1
+    volumes:
+      - ./db/migrations:/migrations:ro
+    command: ["-path", "/migrations", "-database", "postgres://todo:todo@db:5432/todo?sslmode=disable", "up"]
+    depends_on:
+      db:
+        condition: service_healthy
   db:
     image: postgres:16
     environment:

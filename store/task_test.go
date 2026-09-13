@@ -10,33 +10,6 @@ import (
 	"github.com/pashagolub/pgxmock/v4"
 )
 
-func TestMigrateSuccess(t *testing.T) {
-	mock, err := pgxmock.NewPool()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer mock.Close()
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS todos").WillReturnResult(pgxmock.NewResult("DDL", 0))
-	if err := Migrate(context.Background(), mock); err != nil {
-		t.Fatal(err)
-	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestMigrateFailure(t *testing.T) {
-	mock, err := pgxmock.NewPool()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer mock.Close()
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS todos").WillReturnError(errors.New("boom"))
-	if err := Migrate(context.Background(), mock); err == nil {
-		t.Fatal("want error")
-	}
-}
-
 func TestPostgresListSuccess(t *testing.T) {
 	mock, err := pgxmock.NewPool()
 	if err != nil {
@@ -50,12 +23,12 @@ func TestPostgresListSuccess(t *testing.T) {
 			AddRow(int64(2), "b", true, now, now),
 	)
 	s := NewPostgresStore(mock)
-	todos, err := s.List(context.Background())
+	tasks, err := s.List(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(todos) != 2 || todos[0].Title != "a" || !todos[1].Done {
-		t.Fatalf("unexpected todos: %+v", todos)
+	if len(tasks) != 2 || tasks[0].Title != "a" || !tasks[1].Done {
+		t.Fatalf("unexpected tasks: %+v", tasks)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatal(err)
@@ -126,7 +99,7 @@ func TestPostgresCreateSuccess(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
 	now := time.Now()
-	mock.ExpectQuery("INSERT INTO todos").WithArgs("buy milk").WillReturnRows(
+	mock.ExpectQuery("INSERT INTO tasks").WithArgs("buy milk").WillReturnRows(
 		pgxmock.NewRows([]string{"id", "title", "done", "created_at", "updated_at"}).
 			AddRow(int64(1), "buy milk", false, now, now),
 	)
@@ -140,7 +113,7 @@ func TestPostgresCreateSuccess(t *testing.T) {
 func TestPostgresCreateError(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectQuery("INSERT INTO todos").WithArgs("x").WillReturnError(errors.New("boom"))
+	mock.ExpectQuery("INSERT INTO tasks").WithArgs("x").WillReturnError(errors.New("boom"))
 	s := NewPostgresStore(mock)
 	if _, err := s.Create(context.Background(), "x"); err == nil {
 		t.Fatal("want error")
@@ -151,7 +124,7 @@ func TestPostgresUpdateSuccess(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
 	now := time.Now()
-	mock.ExpectQuery("UPDATE todos").WithArgs(int64(1), "y", true).WillReturnRows(
+	mock.ExpectQuery("UPDATE tasks").WithArgs(int64(1), "y", true).WillReturnRows(
 		pgxmock.NewRows([]string{"id", "title", "done", "created_at", "updated_at"}).
 			AddRow(int64(1), "y", true, now, now),
 	)
@@ -165,7 +138,7 @@ func TestPostgresUpdateSuccess(t *testing.T) {
 func TestPostgresUpdateNotFound(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectQuery("UPDATE todos").WithArgs(int64(999), "y", true).WillReturnError(pgx.ErrNoRows)
+	mock.ExpectQuery("UPDATE tasks").WithArgs(int64(999), "y", true).WillReturnError(pgx.ErrNoRows)
 	s := NewPostgresStore(mock)
 	if _, err := s.Update(context.Background(), 999, "y", true); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("want ErrNotFound, got %v", err)
@@ -175,7 +148,7 @@ func TestPostgresUpdateNotFound(t *testing.T) {
 func TestPostgresUpdateError(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectQuery("UPDATE todos").WithArgs(int64(1), "y", true).WillReturnError(errors.New("boom"))
+	mock.ExpectQuery("UPDATE tasks").WithArgs(int64(1), "y", true).WillReturnError(errors.New("boom"))
 	s := NewPostgresStore(mock)
 	if _, err := s.Update(context.Background(), 1, "y", true); err == nil {
 		t.Fatal("want error")
@@ -185,7 +158,7 @@ func TestPostgresUpdateError(t *testing.T) {
 func TestPostgresDeleteSuccess(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectExec("DELETE FROM todos").WithArgs(int64(1)).
+	mock.ExpectExec("DELETE FROM tasks").WithArgs(int64(1)).
 		WillReturnResult(pgxmock.NewResult("DELETE", 1))
 	s := NewPostgresStore(mock)
 	if err := s.Delete(context.Background(), 1); err != nil {
@@ -196,7 +169,7 @@ func TestPostgresDeleteSuccess(t *testing.T) {
 func TestPostgresDeleteNotFound(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectExec("DELETE FROM todos").WithArgs(int64(999)).
+	mock.ExpectExec("DELETE FROM tasks").WithArgs(int64(999)).
 		WillReturnResult(pgxmock.NewResult("DELETE", 0))
 	s := NewPostgresStore(mock)
 	if err := s.Delete(context.Background(), 999); !errors.Is(err, ErrNotFound) {
@@ -207,7 +180,7 @@ func TestPostgresDeleteNotFound(t *testing.T) {
 func TestPostgresDeleteError(t *testing.T) {
 	mock, _ := pgxmock.NewPool()
 	defer mock.Close()
-	mock.ExpectExec("DELETE FROM todos").WithArgs(int64(1)).WillReturnError(errors.New("boom"))
+	mock.ExpectExec("DELETE FROM tasks").WithArgs(int64(1)).WillReturnError(errors.New("boom"))
 	s := NewPostgresStore(mock)
 	if err := s.Delete(context.Background(), 1); err == nil {
 		t.Fatal("want error")

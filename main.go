@@ -19,16 +19,16 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// @title Todo Manager API
+// @title Task Manager API
 // @version 1.0
-// @description Simple todo CRUD API.
+// @description Simple task CRUD API.
 // @host localhost:8080
 // @BasePath /
-func NewRouter(s store.TodoStore) *gin.Engine {
+func NewRouter(s store.TaskStore) *gin.Engine {
 	r := gin.Default()
 	r.Use(observability.Middleware())
 	r.GET("/healthz", Healthz)
-	handler.NewTodoHandler(s).RegisterRoutes(r)
+	handler.NewTaskHandler(s).RegisterRoutes(r)
 	r.GET("/metrics", Metrics)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
@@ -76,10 +76,6 @@ func main() {
 	if err := pool.Ping(ctx); err != nil {
 		log.Fatalf("db ping: %v", err)
 	}
-	if err := store.Migrate(ctx, pool); err != nil {
-		log.Fatalf("migrate: %v", err)
-	}
-
 	r := NewRouter(store.NewPostgresStore(pool))
 
 	log.Printf("listening on :%s", port)

@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Simple todo CRUD API.",
-        "title": "Todo Manager API",
+        "description": "Simple task CRUD API.",
+        "title": "Task Manager API",
         "contact": {},
         "version": "1.0"
     },
@@ -50,22 +50,22 @@
                 }
             }
         },
-        "/todos": {
+        "/tasks": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "List todos",
+                "summary": "List tasks",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Todo"
+                                "$ref": "#/definitions/model.Task"
                             }
                         }
                     },
@@ -85,17 +85,17 @@
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "Create todo",
+                "summary": "Create task",
                 "parameters": [
                     {
-                        "description": "Todo to create",
-                        "name": "todo",
+                        "description": "Task to create",
+                        "name": "task",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.CreateTodoInput"
+                            "$ref": "#/definitions/model.CreateTaskInput"
                         }
                     }
                 ],
@@ -103,7 +103,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.Todo"
+                            "$ref": "#/definitions/model.Task"
                         }
                     },
                     "400": {
@@ -121,19 +121,19 @@
                 }
             }
         },
-        "/todos/{id}": {
+        "/tasks/{id}": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "Get todo",
+                "summary": "Get task",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Todo ID",
+                        "description": "Task ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -143,7 +143,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Todo"
+                            "$ref": "#/definitions/model.Task"
                         }
                     },
                     "400": {
@@ -174,24 +174,24 @@
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "Update todo",
+                "summary": "Update task",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Todo ID",
+                        "description": "Task ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
                         "description": "Updated fields",
-                        "name": "todo",
+                        "name": "task",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UpdateTodoInput"
+                            "$ref": "#/definitions/model.UpdateTaskInput"
                         }
                     }
                 ],
@@ -199,7 +199,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Todo"
+                            "$ref": "#/definitions/model.Task"
                         }
                     },
                     "400": {
@@ -227,13 +227,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "todos"
+                    "tasks"
                 ],
-                "summary": "Delete todo",
+                "summary": "Delete task",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Todo ID",
+                        "description": "Task ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -266,7 +266,7 @@
         }
     },
     "definitions": {
-        "model.CreateTodoInput": {
+        "model.CreateTaskInput": {
             "type": "object",
             "required": [
                 "title"
@@ -289,7 +289,7 @@
                 }
             }
         },
-        "model.Todo": {
+        "model.Task": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -312,7 +312,7 @@
                 }
             }
         },
-        "model.UpdateTodoInput": {
+        "model.UpdateTaskInput": {
             "type": "object",
             "required": [
                 "title"

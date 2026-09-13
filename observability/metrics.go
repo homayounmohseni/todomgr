@@ -30,7 +30,7 @@ var (
 	tasksCount = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "tasks_count",
-			Help: "Current number of todos.",
+			Help: "Current number of tasks.",
 		},
 	)
 )

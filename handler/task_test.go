@@ -15,60 +15,60 @@ import (
 )
 
 type fakeStore struct {
-	todos  map[int64]model.Todo
+	tasks  map[int64]model.Task
 	nextID int64
 }
 
 func newFakeStore() *fakeStore {
-	return &fakeStore{todos: map[int64]model.Todo{}, nextID: 1}
+	return &fakeStore{tasks: map[int64]model.Task{}, nextID: 1}
 }
 
-func (f *fakeStore) List(_ context.Context) ([]model.Todo, error) {
-	out := []model.Todo{}
-	for _, t := range f.todos {
+func (f *fakeStore) List(_ context.Context) ([]model.Task, error) {
+	out := []model.Task{}
+	for _, t := range f.tasks {
 		out = append(out, t)
 	}
 	return out, nil
 }
 
-func (f *fakeStore) Get(_ context.Context, id int64) (model.Todo, error) {
-	t, ok := f.todos[id]
+func (f *fakeStore) Get(_ context.Context, id int64) (model.Task, error) {
+	t, ok := f.tasks[id]
 	if !ok {
-		return model.Todo{}, store.ErrNotFound
+		return model.Task{}, store.ErrNotFound
 	}
 	return t, nil
 }
 
-func (f *fakeStore) Create(_ context.Context, title string) (model.Todo, error) {
-	t := model.Todo{ID: f.nextID, Title: title}
-	f.todos[t.ID] = t
+func (f *fakeStore) Create(_ context.Context, title string) (model.Task, error) {
+	t := model.Task{ID: f.nextID, Title: title}
+	f.tasks[t.ID] = t
 	f.nextID++
 	return t, nil
 }
 
-func (f *fakeStore) Update(_ context.Context, id int64, title string, done bool) (model.Todo, error) {
-	t, ok := f.todos[id]
+func (f *fakeStore) Update(_ context.Context, id int64, title string, done bool) (model.Task, error) {
+	t, ok := f.tasks[id]
 	if !ok {
-		return model.Todo{}, store.ErrNotFound
+		return model.Task{}, store.ErrNotFound
 	}
 	t.Title = title
 	t.Done = done
-	f.todos[id] = t
+	f.tasks[id] = t
 	return t, nil
 }
 
 func (f *fakeStore) Delete(_ context.Context, id int64) error {
-	if _, ok := f.todos[id]; !ok {
+	if _, ok := f.tasks[id]; !ok {
 		return store.ErrNotFound
 	}
-	delete(f.todos, id)
+	delete(f.tasks, id)
 	return nil
 }
 
-func setupRouter(s store.TodoStore) *gin.Engine {
+func setupRouter(s store.TaskStore) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	NewTodoHandler(s).RegisterRoutes(r)
+	NewTaskHandler(s).RegisterRoutes(r)
 	return r
 }
 
@@ -76,13 +76,13 @@ func TestCreateAndGet(t *testing.T) {
 	r := setupRouter(newFakeStore())
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/todos", bytes.NewBufferString(`{"title":"buy milk"}`))
+	req, _ := http.NewRequest("POST", "/tasks", bytes.NewBufferString(`{"title":"buy milk"}`))
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create status = %d, want 201 (%s)", w.Code, w.Body.String())
 	}
-	var created model.Todo
+	var created model.Task
 	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestCreateAndGet(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/todos/1", nil)
+	req, _ = http.NewRequest("GET", "/tasks/1", nil)
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("get status = %d", w.Code)
@@ -101,7 +101,7 @@ func TestCreateAndGet(t *testing.T) {
 func TestCreateValidation(t *testing.T) {
 	r := setupRouter(newFakeStore())
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/todos", bytes.NewBufferString(`{"title":""}`))
+	req, _ := http.NewRequest("POST", "/tasks", bytes.NewBufferString(`{"title":""}`))
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusBadRequest {
@@ -112,7 +112,7 @@ func TestCreateValidation(t *testing.T) {
 func TestGetNotFound(t *testing.T) {
 	r := setupRouter(newFakeStore())
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/todos/999", nil)
+	req, _ := http.NewRequest("GET", "/tasks/999", nil)
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", w.Code)
@@ -127,7 +127,7 @@ func TestUpdateAndDelete(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("PUT", "/todos/1", bytes.NewBufferString(`{"title":"y","done":true}`))
+	req, _ := http.NewRequest("PUT", "/tasks/1", bytes.NewBufferString(`{"title":"y","done":true}`))
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
@@ -135,7 +135,7 @@ func TestUpdateAndDelete(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("DELETE", "/todos/1", nil)
+	req, _ = http.NewRequest("DELETE", "/tasks/1", nil)
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusNoContent {
 		t.Fatalf("delete status = %d", w.Code)

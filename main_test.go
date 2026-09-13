@@ -17,29 +17,29 @@ import (
 )
 
 type stubStore struct {
-	todos map[int64]model.Todo
+	tasks map[int64]model.Task
 }
 
-func (s *stubStore) List(_ context.Context) ([]model.Todo, error) {
-	return []model.Todo{{ID: 1, Title: "a"}}, nil
+func (s *stubStore) List(_ context.Context) ([]model.Task, error) {
+	return []model.Task{{ID: 1, Title: "a"}}, nil
 }
 
-func (s *stubStore) Get(_ context.Context, id int64) (model.Todo, error) {
+func (s *stubStore) Get(_ context.Context, id int64) (model.Task, error) {
 	if id != 1 {
-		return model.Todo{}, store.ErrNotFound
+		return model.Task{}, store.ErrNotFound
 	}
-	return model.Todo{ID: 1, Title: "a"}, nil
+	return model.Task{ID: 1, Title: "a"}, nil
 }
 
-func (s *stubStore) Create(_ context.Context, title string) (model.Todo, error) {
+func (s *stubStore) Create(_ context.Context, title string) (model.Task, error) {
 	if title == "boom" {
-		return model.Todo{}, errors.New("db down")
+		return model.Task{}, errors.New("db down")
 	}
-	return model.Todo{ID: 1, Title: title}, nil
+	return model.Task{ID: 1, Title: title}, nil
 }
 
-func (s *stubStore) Update(_ context.Context, id int64, title string, done bool) (model.Todo, error) {
-	return model.Todo{ID: id, Title: title, Done: done}, nil
+func (s *stubStore) Update(_ context.Context, id int64, title string, done bool) (model.Task, error) {
+	return model.Task{ID: id, Title: title, Done: done}, nil
 }
 
 func (s *stubStore) Delete(_ context.Context, _ int64) error { return nil }
@@ -81,7 +81,7 @@ func TestMetricsEndpoint(t *testing.T) {
 	r := NewRouter(&stubStore{})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/todos", bytes.NewBufferString(`{"title":"a"}`))
+	req, _ := http.NewRequest("POST", "/tasks", bytes.NewBufferString(`{"title":"a"}`))
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusCreated {
@@ -103,12 +103,12 @@ func TestMetricsEndpoint(t *testing.T) {
 	}
 }
 
-func TestRouterTodoRoundtrip(t *testing.T) {
+func TestRouterTaskRoundtrip(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := NewRouter(&stubStore{})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/todos", bytes.NewBufferString(`{"title":"a"}`))
+	req, _ := http.NewRequest("POST", "/tasks", bytes.NewBufferString(`{"title":"a"}`))
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusCreated {
@@ -116,7 +116,7 @@ func TestRouterTodoRoundtrip(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/todos", nil)
+	req, _ = http.NewRequest("GET", "/tasks", nil)
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("list status = %d", w.Code)
